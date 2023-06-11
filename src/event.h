@@ -10,20 +10,21 @@ typedef struct {
     void (*event)(void *args);
     void *args;
     uint64_t last_run;
+    unsigned int id;
 } FoxEvent;
 
-typedef struct {
-    FoxEvent **events;
-    int size;
-    uint64_t current_time;
+typedef struct _FoxEventQueue {
+    FoxEvent *event;
+    struct _FoxEventQueue *next;
 } FoxEventQueue;
 
 FoxEventQueue *fox_event_queue_create();
 void fox_event_queue_destroy(FoxEventQueue *queue);
 void fox_event_queue_add(FoxEventQueue *queue, FoxEvent *event);
 void fox_event_queue_remove(FoxEventQueue *queue, FoxEvent *event);
-void fox_event_queue_run(FoxEventQueue *queue);
+void fox_event_queue_run(FoxEventQueue *queue, uint64_t time);
 short fox_event_queue_empty(FoxEventQueue *queue);
+void fox_event_queue_repair(FoxEventQueue *queue);
 
 FoxEvent *fox_event_create(uint64_t time, short repeat, void (*event)(void *args), void *args);
 #endif

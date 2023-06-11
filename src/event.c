@@ -6,60 +6,94 @@
 
 FoxEventQueue *fox_event_queue_create() {
     FoxEventQueue *queue = malloc(sizeof(FoxEventQueue));
-    queue->size = 0;
-    queue->events = malloc(sizeof(FoxEvent));
+    queue->event = NULL;
+    queue->next = NULL;
     return queue;
 }
 
 void fox_event_queue_add(FoxEventQueue *queue, FoxEvent *event) {
-    queue->size++;
-    queue->events = realloc(queue->events, sizeof(FoxEvent) * queue->size);
-    queue->events[queue->size - 1] = event;
+    FoxEventQueue *copy = queue;
+    while (copy->next) {
+        copy = copy->next;
+    }
+    copy->next = fox_event_queue_create();
+    copy->event = event;
 }
 
 void fox_event_queue_remove(FoxEventQueue *queue, FoxEvent *event) {
-    for (int i = 0; i < queue->size; i++) {
-        if (queue->events[i] == event) {
-            queue->events[i] = NULL;
+    FoxEventQueue *copy = queue;
+    while (copy->next) {
+        if (copy->event == event) {
+            free(copy->event);
+            copy->event = NULL;
             break;
         }
+        copy = copy->next;
     }
 }
 
-void fox_event_queue_run(FoxEventQueue *queue) {
-    for (int i = 0; i < queue->size; i++) {
-        if (!queue->events[i]) continue;
-        if (queue->current_time < queue->events[i]->time && !queue->events[i]->repeat) continue;
-        if (queue->events[i]->repeat) {
-            uint64_t last_time = queue->events[i]->last_run;
-            if (queue->current_time - last_time < queue->events[i]->time) continue;
-            queue->events[i]->last_run = queue->current_time;
-            queue->events[i]->event(queue->events[i]->args);
-        } else {
-            queue->events[i]->event(queue->events[i]->args);
-            fox_event_queue_remove(queue, queue->events[i]);
+void fox_event_queue_repair(FoxEventQueue *queue) {
+    FoxEventQueue *copy = queue;
+    while (copy->next) {
+        FoxEvent *event = copy->event;
+        if (!event) {
+            FoxEventQueue *tmp = copy->next;
+            copy = tmp->next;
+            continue;
         }
+        copy = copy->next;
     }
+}
+
+void fox_event_queue_run(FoxEventQueue *queue, uint64_t time) {
+    FoxEventQueue *copy = queue;
+    while (copy->next) {
+        FoxEvent *event = copy->event;
+        if (!event) {
+            copy = copy->next;
+            continue;
+        }
+
+        if (time < event->time && !event->repeat) {
+            copy = copy->next;
+            continue;
+        }
+        if (event->repeat) {
+            uint64_t last_time = event->last_run;
+            if (time - last_time < event->time) {
+                copy = copy->next;
+                continue;
+            }
+            event->last_run = time;
+            event->event(event->args);
+        } else {
+            event->event(event->args);
+            fox_event_queue_remove(queue, event);
+        }
+        copy = copy->next;
+    }
+    fox_event_queue_repair(queue);
 }
 
 void fox_event_queue_destroy(FoxEventQueue *queue) {
-    for (int i = 0; i < queue->size; i++) {
-        if (!queue->events[i]) continue;
-        free(queue->events[i]);
+    FoxEventQueue *copy = queue;
+    while (copy->next) {
+        FoxEventQueue *tmp = copy->next;
+        free(copy);
+        copy = tmp;
     }
-    free(queue->events);
-    free(queue);
+    free(copy);
 }
 
 short fox_event_queue_empty(FoxEventQueue *queue) {
-    short empty = 1;
-    for (int i = 0; i < queue->size; i++) {
-        if (queue->events[i]) {
-            empty = 0;
-            break;
+    FoxEventQueue *copy = queue;
+    while (copy->next) {
+        if (copy->event) {
+            return 0;
         }
+        copy = copy->next;
     }
-    return empty;
+    return 1;
 }
 
 uint64_t Fox_Events_getCurrentTime() {
@@ -70,7 +104,12 @@ uint64_t Fox_Events_getCurrentTime() {
 
 FoxEvent *fox_event_create(uint64_t time, short repeat, void (*event)(void *args), void *args) {
     FoxEvent *fox_event = malloc(sizeof(FoxEvent));
-    fox_event->time = time;
+    if (!repeat) {
+        fox_event->time = time + Fox_Events_getCurrentTime();
+    } else {
+        fox_event->time = time;
+        fox_event->last_run = Fox_Events_getCurrentTime();
+    }
     fox_event->repeat = repeat;
     fox_event->event = event;
     fox_event->args = args;
