@@ -25,6 +25,7 @@ void fox_event_queue_remove(FoxEventQueue *queue, FoxEvent *event);
 void fox_event_queue_run(FoxEventQueue *queue, uint64_t time);
 short fox_event_queue_empty(FoxEventQueue *queue);
 void fox_event_queue_repair(FoxEventQueue *queue);
+void fox_event_queue_remove_id(FoxEventQueue *queue, int id);
 
-FoxEvent *fox_event_create(uint64_t time, short repeat, void (*event)(void *args), void *args);
+FoxEvent *fox_event_create(uint64_t time, short repeat, void (*event)(void *args), void *args, int id);
 #endif

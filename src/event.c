@@ -32,6 +32,18 @@ void fox_event_queue_remove(FoxEventQueue *queue, FoxEvent *event) {
     }
 }
 
+void fox_event_queue_remove_id(FoxEventQueue *queue, int id) {
+    FoxEventQueue *copy = queue;
+    while (copy->next) {
+        if (copy->event && copy->event->id == id) {
+            free(copy->event);
+            copy->event = NULL;
+            break;
+        }
+        copy = copy->next;
+    }
+}
+
 void fox_event_queue_repair(FoxEventQueue *queue) {
     FoxEventQueue *copy = queue;
     while (copy->next) {
@@ -102,7 +114,7 @@ uint64_t Fox_Events_getCurrentTime() {
     return tv.tv_sec * 1000 + tv.tv_usec / 1000;
 }
 
-FoxEvent *fox_event_create(uint64_t time, short repeat, void (*event)(void *args), void *args) {
+FoxEvent *fox_event_create(uint64_t time, short repeat, void (*event)(void *args), void *args, int id) {
     FoxEvent *fox_event = malloc(sizeof(FoxEvent));
     if (!repeat) {
         fox_event->time = time + Fox_Events_getCurrentTime();
@@ -114,5 +126,6 @@ FoxEvent *fox_event_create(uint64_t time, short repeat, void (*event)(void *args
     fox_event->event = event;
     fox_event->args = args;
     fox_event->last_run = Fox_Events_getCurrentTime();
+    fox_event->id = id;
     return fox_event;
 }
