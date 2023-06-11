@@ -50,6 +50,9 @@ void fox_event_queue_repair(FoxEventQueue *queue) {
         FoxEvent *event = copy->event;
         if (!event) {
             FoxEventQueue *tmp = copy->next;
+            if (!tmp) {
+                break;
+            }
             copy = tmp->next;
             continue;
         }

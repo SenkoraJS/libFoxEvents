@@ -19,9 +19,9 @@ void func2(void *args) {
 int main() {
     FoxEventQueue *queue = fox_event_queue_create();
 
-    FoxEvent *event2 = fox_event_create(100, 0, func2, NULL);
+    FoxEvent *event2 = fox_event_create(100, 0, func2, NULL, 1);
     fox_event_queue_add(queue, event2);
-    FoxEvent *event = fox_event_create(1000, 0, func, NULL);
+    FoxEvent *event = fox_event_create(1000, 0, func, NULL, 2);
     fox_event_queue_add(queue, event);
 
     while (!fox_event_queue_empty(queue)) {
