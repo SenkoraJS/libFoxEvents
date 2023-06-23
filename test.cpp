@@ -1,4 +1,4 @@
-#include "src/event.hpp"
+#include "src/foxevents.hpp"
 #include <stdio.h>
 #include <sys/time.h>
 
