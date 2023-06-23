@@ -1,0 +1,3 @@
+[submodule "foxWorkers"]
+	path = foxWorkers
+	url = https://github.com/SenkoraJS/foxWorkers
